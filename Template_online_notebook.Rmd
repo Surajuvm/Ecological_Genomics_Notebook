@@ -31,8 +31,8 @@ Science should be reproducible and one of the best ways to achieve this is by lo
 * [Page 3: 2018-02-01](#id-section3). Clean using Trimmomatic
 * [Page 4: 2018-02-05](#id-section4). Mapping the cleanreads into the reference genome
 * [Page 5: 2018-02-07](#id-section5). Introduction to RNAseq data analysis by DESeq2
-* [Page 6: 2018-02-12](#id-section6). 
-* [Page 7: 2018-02-14](#id-section7).
+* [Page 6: 2018-02-12](#id-section6). RNAseq data analysis by DESeq2 - MA and PCA plot
+* [Page 7: 2018-02-14](#id-section7). RNAseq data analysis - Pheatmap of global gene expression and single transcript
 * [Page 8: 2018-02-21](#id-section8).
 * [Page 9: 2018-02-26](#id-section9). Population Genomics Day 1
 * [Page 10:](#id-section10).
@@ -662,12 +662,179 @@ res_pop <- res_pop[order(res_pop$padj),]
 
 summary(res_pop)
 
+```
+
 ------
 <div id='id-section6'/>
-### Page 6:
+### Page 6: MA plot and PCA plot using DESeq2 and ggplot2
+Today we will learn to visualize differential gene expression by using MA plot and PCA plot. 
+We continued working on R and entered following codes to plot MA and PCA plot.
+
+```
+# Data Visualization
+# Designing MA-Plot
+
+plotMA(res, ylim=c(-2,2))
+
+#we see a MA plot with scattered points. It might be useful to visualize the MA-plot for the shrunken log2fold changes, which removes the noise associated with log2 fold changes from low count genes without requiring arbitrary filtering thresholds.
+
+plotMA(resLFC, ylim=c(-2,2))
+dds <- DESeq(dds)
+resultsNames(dds)
+
+plotMA(res)
+
+plotMA(res_pop, main="DESeq2", ylim=c(-2,2))
+abline(h=c(-1,1), col="blue", lwd=2)
+
+
+############## PCA
+
+
+rld <- rlog(dds, blind=FALSE)
+vsd <- vst(dds, blind = FALSE)
+
+data <- plotPCA(vsd, intgroup=c("population", "devstage", "sex"), returnData=TRUE)
+percentVar <- round(100*attr(data,"percentVar"))
+
+data$devstage <- factor(data$devstage, levels=c("L3L", "PP1", "PD1", "AD4"), labels = c("L3L", "PP1", "PD1", "AD4"))
+
+pdf(file="PCA_sex_by_stage.pdf", height=5.5, width=5.5)
+ggplot(data, aes(PC1, PC2, color=sex, shape=devstage))  + 
+  geom_point(size=4, alpha=0.85) +
+  xlab(paste0("PC1: ",percentVar[1], "% variance")) +
+  ylab(paste0("PC2: ",percentVar[2], "% variance")) +
+  theme_minimal()  
+dev.off()    
+
+ggplot(data, aes(PC1, PC2, color=population, shape=devstage))  + 
+  geom_point(size=4, alpha=0.85) +
+  xlab(paste0("PC1: ",percentVar[1], "% variance")) +
+  ylab(paste0("PC2: ",percentVar[2], "% variance")) +
+  theme_minimal()  
+
+```
 ------
 <div id='id-section7'/>
-### Page 7:
+### Page 7: RNASeq data analysis by DESeq2. Creating Pheatmap to visualize global gene expression and also to observe single transcript more closely. 
+We continued using R to create pheatmaps. We installed and loaded RColorBrewer and Pheatmap libraries. Following scripts were used for this purpose.
+
+```
+############# creating pheatmap
+
+library("RColorBrewer")
+library("pheatmap")
+
+sampleDists = dist(t(assay(rld)))
+sampleDistMatrix = as.matrix(sampleDists)
+rownames(sampleDistMatrix) = paste(rld$population, rld$devstage, rld$sex, sep = "-")
+colnames(sampleDistMatrix) = NULL
+colors = colorRampPalette(rev(brewer.pal(9, "Oranges")))(250)
+
+pheatmap(sampleDistMatrix, clustering_distance_rows = sampleDists, clustering_distance_cols = sampleDists, color = colors)
+
+
+# In order to examine single transcript more closely
+
+d = plotCounts(dds, gene = "OTAU017482-RA", intgroup = (c("population", "sex", "devstage")), returnData = T)
+p = ggplot(d, aes(x=devstage, y=count, shape=sex, color=population)) + theme_minimal() + theme(text = element_text(size = 20), panel.grid.major = element_line(color = "grey"))
+p = p + geom_point(position = position_jitter(w=3, h=0), size=3) + scale_x_discrete(limits = c("L3L", "PP1", "PD1", "AD4"))
+
+
+write.csv(res, file="DGE_NCvsWA_pop.csv", row.names=T, quote=F) #this outputs results as csv file
+
+neglogpval = as.matrix(-log(res$pvalue))   #script for GO Mann-Whitney test requires this format
+head(neglogpval)
+res_negpval = cbind(row.names(res), neglogpval)
+colnames(res_negpval)=c("gene", "neglogpval")
+
+write.csv(res_negpval, file="DGE_NCvsWA_pop_neglogpval.csv.csv", row.names=F, quote=F)
+
+#####################################
+
+colData$group <- factor(paste0(colData$population, "-", colData$devstage, "-", colData$sex))
+head(colData)
+
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ group)
+dds <- dds[rowSums(counts(dds)) > 1,]
+dim(dds)
+
+
+dds <- DESeq(dds, modelMatrixType = "expanded", parallel = T)
+
+resultsNames(dds)
+
+res_pop_PP1_F <- results(dds, contrast = list(c("group_NC.PP1.F_vs_NC.AD4.F"), c("group_WA.PP1.F_vs_NC.AD4.F")), listValues = c (1/2, -1/2), alpha = 0.05)
+
+res_pop_PP1_F <- res_pop_PP1_F[order(res_pop_PP1_F$padj),]
+head(res_pop_PP1_F)
+
+# log2 fold change (MLE): 0.5 group_NC.PP1.F_vs_NC.AD4.F vs 0.5 group_WA.PP1.F_vs_NC.AD4.F 
+# Wald test p-value: 0.5 group_NC.PP1.F_vs_NC.AD4.F vs 0.5 group_WA.PP1.F_vs_NC.AD4.F 
+# DataFrame with 6 rows and 6 columns
+# baseMean log2FoldChange     lfcSE       stat       pvalue         padj
+# <numeric>      <numeric> <numeric>  <numeric>    <numeric>    <numeric>
+#   OTAU012622-RA   31.61690     -24.015012  1.336019 -17.975053 3.055737e-72 4.245641e-68
+# OTAU009289-RA   19.87268      16.377873  1.973838   8.297477 1.063460e-16 7.387858e-13
+# OTAU007155-RA 2989.82336     -10.440891  1.286915  -8.113117 4.933741e-16 2.284980e-12
+# OTAU012427-RA   51.36362       9.162560  1.149377   7.971763 1.564260e-15 5.433456e-12
+# OTAU010169-RA   12.03314       9.613150  1.243946   7.727950 1.092919e-14 3.037003e-11
+# OTAU011364-RA 2094.24323       8.803901  1.208617   7.284277 3.233995e-13 7.488854e-10
+
+summary(res_pop_PP1_F)
+
+# out of 16851 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)     : 46, 0.27% 
+# LFC < 0 (down)   : 31, 0.18% 
+# outliers [1]     : 17, 0.1% 
+# low counts [2]   : 2940, 17% 
+# (mean count < 3)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+
+sig_pop_PP1_F <- res_pop_PP1_F[which(res_pop_PP1_F$padj < 0.05),] # great way to subset data
+dim(sig_pop_PP1_F)
+
+# the difference between results of different people in class was due to different version of DESeq2 package.
+
+################### Pull out significant genes to be able to make a heatmap
+
+sig_pop_PP1_F_df <- as.data.frame(sig_pop_PP1_F)
+sig_pop_PP1_F_df$Row.names <- rownames(sig_pop_PP1_F_df)
+dim(sig_pop_PP1_F_df)
+
+
+genesOfInterest_pop_PP1_F <- c(sig_pop_PP1_F_df$Row.names)
+length(genesOfInterest_pop_PP1_F)
+
+vsd <- vst(dds, blind = FALSE)
+
+######
+
+dds$combined = factor(paste0(dds$population, "-", dds$devstage, "-", dds$sex))
+dds$combined <- factor(dds$combined, levels=c("WA-L3L-F","WA-L3L-M","WA-PP1-F","WA-PP1-M","WA-PD1-F","WA-PD1-M","WA-AD4-F","WA-AD4-M","NC-L3L-F","NC-L3L-M","NC-PP1-F","NC-PP1-M","NC-PD1-F","NC-PD1-M","NC-AD4-F","NC-AD4-M"), labels=c("WA-L3L-F","WA-L3L-M","WA-PP1-F","WA-PP1-M","WA-PD1-F","WA-PD1-M","WA-AD4-F","WA-AD4-M","NC-L3L-F","NC-L3L-M","NC-PP1-F","NC-PP1-M","NC-PD1-F","NC-PD1-M","NC-AD4-F","NC-AD4-M"))
+
+baseMeanPerGrp <- sapply( levels(dds$combined), function(lvl) rowMeans( counts(dds,normalized=TRUE)[,dds$combined == lvl] ) )
+
+head(baseMeanPerGrp)
+dim(baseMeanPerGrp)
+
+# pulls out normalized counts (avg of 3 reps) for all of our significant genes
+m <- baseMeanPerGrp[genesOfInterest_pop_PP1_F, c("WA-PP1-F", "WA-PP1-M", "NC-PP1-F", "NC-PP1-M")]
+
+head(m)
+dim(m)
+
+mat_scaled = t(apply(m,1, scale))
+head(mat_scaled)
+
+library(pheatmap)
+
+pheatmap(mat_scaled, labels_col = c("WA-PP1-F", "WA-PP1-M", "NC-PP1-F", "NC-PP1-M"), cluster_cols = TRUE, cluster_rows = TRUE)
+
+
+```
 ------
 <div id='id-section8'/>
 ### Page 8:
