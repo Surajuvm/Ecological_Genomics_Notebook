@@ -560,7 +560,7 @@ how well did our cleanread files map to the reference genome
 This website explains the flag numbers
 https://broadinstitute.github.io/picard/explain-flags.html
 
-Bash file
+###Bash file
 We can make our own script using bash script. We gave the command
 vim test_bash.sh
 To create a bash file, we use insert (by clicking i on bash file)
