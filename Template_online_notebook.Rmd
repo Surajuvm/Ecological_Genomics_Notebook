@@ -34,8 +34,8 @@ Science should be reproducible and one of the best ways to achieve this is by lo
 * [Page 6: 2018-02-12](#id-section6). RNAseq data analysis by DESeq2 - MA and PCA plot
 * [Page 7: 2018-02-14](#id-section7). RNAseq data analysis - Heatmap of global gene expression and single transcript
 * [Page 8: 2018-02-21](#id-section8).
-* [Page 9: 2018-02-26](#id-section9). Population Genomics Day 1
-* [Page 10:](#id-section10).
+* [Page 9: 2018-02-26](#id-section9). Population Genomics Day 1 - Intro into Genotype and SNP Calling
+* [Page 10: 2018-02-28](#id-section10). Population Genomics Day 2 - Diversity and Site Frequency Spectrum
 * [Page 11:](#id-section11).
 * [Page 12:](#id-section12).
 * [Page 13:](#id-section13).
@@ -861,9 +861,227 @@ We will use PuTTY.
 We will fix reads that are no longer mated, remove duplicates (PCR), index the data (for computational efficiency), and call SNPs and genotypes.
 
 In samtools tview it opens a light weight alignment viewer
+The code is 
+```
+samtools tview <filename> 
+```
+It opens in a nice window where we can see heterozygous sites in the alignment. 
+Clicking N in here shows the nucleotides in colours. 
 ------
 <div id='id-section10'/>
-### Page 10:
+### Page 10: February 28, 2018 - Diversity and Site Frequency Spectrum
+
+We took our previous file, and now look for the flatstats.
+The codes we used is
+```
+samtools flatstats <filename.sorted.bam>
+```
+We got the error message. It was because of stats in flatstat. We ran the code again using 
+
+```
+samtools flatstat <filename.sorted.bam>
+
+```
+
+This is the result of flagstat
+
+```
+21671324 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+73032 + 0 supplementary
+0 + 0 duplicates
+18628501 + 0 mapped (85.96% : N/A)
+21598292 + 0 paired in sequencing
+10799146 + 0 read1
+10799146 + 0 read2
+18207888 + 0 properly paired (84.30% : N/A)
+18373168 + 0 with itself and mate mapped
+182301 + 0 singletons (0.84% : N/A)
+106318 + 0 with mate mapped to a different chr
+86701 + 0 with mate mapped to a different chr (mapQ>=5)
+
+```
+We are now ready to call SNPs
+
+Next we opened the bash script where we wrote all our scripts. File named CallSNPs.sh
+
+We commented out the codes that we had written earlier becasue they are no longer needed. we did that by putting # before them
+Next we call bcftools and use mpileup. This takes our bam reads and counts how many alleles of nucleotides are present and their position.
+It is a long command, and we will split by using back \ it's the symbol above enter.
+
+-Ou is the output file -f means the output file in uncompressed format (no gip or anything). path to file name. 
+First set up code piles up the command. Then the next call command will call the SNPs.
+The codes look like this. GQ is the genotype quality, GP is the genotype probability. The quality is in Phred scale.
+vcf is the variant call format. it is a tab delimited text file. 
+
+```
+bcftools mpileup \
+-Ou -f /data/project_data/beetles/reference/OTAU.fna \
+~/mydata/WA_PP1_M3_bwamem.fm.sorted.bam \
+--threads 4 --skip-indel --annotate AD,DP | \
+
+bcftools call -Ov -mv --format-fields GQ,GP > WA_PP1_M3.vcf
+```
+These codes were written in bash file and saved by writing wq
+When I ran this file initially it did not work, because there was space between GQ, GP (and because of this space it did not work)
+Melissa noticed this space and then it worked :)
+
+While the code was running. We looked into VCF file example (Human chromosome 20)
+Header
+Data (Each row is a SNP), information on chromosome , referenece allele, alternate allele, phred scale quality, filters (used flexibly by different programs), Info (DP = 14 means there are 14 reads across all individuals at that one site), individual data (this case two individuals, data are delimted by colons, first field is the genotype 0|0 will be homozygote for G) second GQ will be phred score, HQ is haplotype quality
+
+When the run was over for our file. We can see what's on it by head command. We did head command but 10 lines were not sufficient.
+We then did head -n 50 which gave 50 lines
+to see how long is the data file, we can use wc (word count)
+```
+wc -l <filename> It gives number of lines. -l is small L, do not be confused with 1 (one). It means to show number of lines.
+```
+To see genotypes, we can tail the file
+
+Meanwhile, we saw following thing in our data
+first column was name of contig. second column is the 
+first filed on right, Read depth is important. Higher DP is the raw metric of confidence about the genotype. 
+Our tail of data looks like this
+```
+OTAU017482-RA   548     .       T       A       27.4222 .       DP=2;SGB=-0.379885;MQ0F=0;AC=2;AN=2;DP4=0,0,1,0;MQ=57   GT:PL:DP:AD:GP:GQ       1/1:57,3,0:1:0,1:-2.14748e+09,-2.14748e+09,0:127
+OTAU017482-RA   602     .       G       A       10.7923 .       DP=1;SGB=-0.379885;MQ0F=0;AC=2;AN=2;DP4=0,0,0,1;MQ=60   GT:PL:DP:AD:GP:GQ       1/1:40,3,0:1:0,1:-2.14748e+09,-2.14748e+09,0:127
+OTAU017482-RA   616     .       G       A       10.7923 .       DP=1;SGB=-0.379885;MQ0F=0;AC=2;AN=2;DP4=0,0,0,1;MQ=60   GT:PL:DP:AD:GP:GQ       1/1:40,3,0:1:0,1:-2.14748e+09,-2.14748e+09,0:127
+OTAU017482-RA   738     .       A       C       11.7172 .       DP=1;SGB=-0.379885;MQ0F=0;AC=2;AN=2;DP4=0,0,1,0;MQ=60   GT:PL:DP:AD:GP:GQ       1/1:41,3,0:1:0,1:-2.14748e+09,-2.14748e+09,0:127
+OTAU017482-RA   743     .       T       C       23.434  .       DP=2;SGB=-0.379885;MQ0F=0;AC=2;AN=2;DP4=0,0,1,0;MQ=60   GT:PL:DP:AD:GP:GQ       1/1:53,3,0:1:0,1:-2.14748e+09,-2.14748e+09,0:127
+OTAU017482-RA   773     .       T       C       30.4183 .       DP=2;SGB=-0.379885;MQ0F=0;AC=2;AN=2;DP4=0,0,1,0;MQ=60   GT:PL:DP:AD:GP:GQ       1/1:60,3,0:1:0,1:-2.14748e+09,-2.14748e+09,0:127
+OTAU017482-RA   806     .       C       A       10.7923 .       DP=1;SGB=-0.379885;MQ0F=0;AC=2;AN=2;DP4=0,0,0,1;MQ=60   GT:PL:DP:AD:GP:GQ       1/1:40,3,0:1:0,1:-2.14748e+09,-2.14748e+09,0:127
+OTAU017482-RA   815     .       G       A       8.13869 .       DP=1;SGB=-0.379885;MQ0F=0;AC=2;AN=2;DP4=0,0,0,1;MQ=60   GT:PL:DP:AD:GP:GQ       1/1:37,3,0:1:0,1:-2.14748e+09,-2.14748e+09,0:127
+OTAU017482-RA   824     .       G       T       4.38466 .       DP=1;SGB=-0.379885;MQ0F=0;AC=2;AN=2;DP4=0,0,0,1;MQ=60   GT:PL:DP:AD:GP:GQ       1/1:32,3,0:1:0,1:-2.14748e+09,-2.14748e+09,0:127
+
+```
+
+We created the vcf file but we won't be working with this file. We will actually work with the file which contains data from all the 72 samples.
+
+There were three files in this location
+```
+ mydata]$ cd /data/project_data/beetles/snps
+
+```
+We tailed one of those files (samtools) A messier, difficult to understand pile of numbers and few letters appeared on the screen. It contained
+information for all the individuals. Previously we saw for a single individual so it seemed more meaningful. but hopefully, things will get better 
+
+We then tailed the file from read2snps. When reads2snps calls for genotypes, it asks users to define minimum depth to call depth and 
+minimum bayesian probability to call snps. the minimum depth was set at 5, and minumum probability at 0.9. So the sites which do not pass those 
+threshold, it represents as a missing data.
+
+How confident are we on the SNP quality and the quality of genotype? If two axes represent on of those parameters. One more axis can be made
+which represent bias, so there can be a missing data even after high quality genotype quality and SNP quality. So the choice of filters 
+becomes important and how we modulate the parameters. 
+
+next we call a tool to call those files in the shared space and output the results in my home directory in myresults directory.
+
+in vcftools, option comes with two dashes (--), this is different than samtools in which option was preceeded by single dash - 
+First we just tried with no options 
+```
+ vcftools --vcf /data/project_data/beetles/snps/OTAU_2018_samtools.vcf
+ 
+ We got the result
+ VCFtools - 0.1.14
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+        --vcf /data/project_data/beetles/snps/OTAU_2018_samtools.vcf
+
+After filtering, kept 72 out of 72 Individuals
+After filtering, kept 611928 out of a possible 611928 Sites
+Run Time = 4.00 seconds
+
+
+```
+
+We just started to playing around with vcftools exploring different options
+
+```
+vcftools --vcf /data/project_data/beetles/snps/OTAU_2018_samtools.vcf --min-alleles 2 --max-alleles 2 --minGQ 10
+
+VCFtools - 0.1.14
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+        --vcf /data/project_data/beetles/snps/OTAU_2018_samtools.vcf
+        --max-alleles 2
+        --min-alleles 2
+        --minGQ 10
+
+After filtering, kept 72 out of 72 Individuals
+After filtering, kept 603231 out of a possible 611928 Sites
+Run Time = 15.00 seconds
+
+
+```
+
+We then used
+```
+vcftools --vcf /data/project_data/beetles/snps/OTAU_2018_samtools.vcf --min-alleles 2 --max-alleles 2 --minGQ 10 --max-missing 0.8
+
+We could see here the drop in SNP sites. In above 603231 sites were kept in this one it's reduced to 113284
+VCFtools - 0.1.14
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+        --vcf /data/project_data/beetles/snps/OTAU_2018_samtools.vcf
+        --max-alleles 2
+        --min-alleles 2
+        --minGQ 10
+        --max-missing 0.8
+
+After filtering, kept 72 out of 72 Individuals
+After filtering, kept 113284 out of a possible 611928 Sites
+Run Time = 20.00 seconds
+
+```
+
+We then used minor allele frequency (maf) option. This reduced our SNP sites 
+
+```
+vcftools --vcf /data/project_data/beetles/snps/OTAU_2018_samtools.vcf --min-alleles 2 --max-alleles 2 --minGQ 10 --max-missing 0.8 --maf 0.01
+
+VCFtools - 0.1.14
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+        --vcf /data/project_data/beetles/snps/OTAU_2018_samtools.vcf
+        --maf 0.01
+        --max-alleles 2
+        --min-alleles 2
+        --minGQ 10
+        --max-missing 0.8
+
+After filtering, kept 72 out of 72 Individuals
+After filtering, kept 83120 out of a possible 611928 Sites
+Run Time = 19.00 seconds
+
+
+```
+Now we are down to little above 83000 SNPs and this is the number we want to keep.
+We then saved this file using the following command
+
+```
+vcftools --vcf /data/project_data/beetles/snps/OTAU_2018_samtools.vcf --min-alleles 2 --max-alleles 2 --minGQ 10 --max-missing 0.8 --maf 0.01 --recode --out OTAU_2018_samtoolsFILTERED.vcf
+
+```
+It got saved with that name along with log files which were automatically created. We did head to the file and saw following
+
+```
+ head OTAU_2018_samtoolsFILTERED.vcf.recode.vcf
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##bcftoolsVersion=1.6+htslib-1.6
+##bcftoolsCommand=mpileup -Ou -f /data/otau/reference/OTAU.fna -C50 --threads 10 --skip-indels --annotate AD,DP /data/otau/cleanreads/merged_fixmate.sorted.rmdup.bam
+##reference=file:///data/otau/reference/OTAU.fna
+##contig=<ID=OTAU000001-RA,length=3192>
+##contig=<ID=OTAU000002-RA,length=4557>
+##contig=<ID=OTAU000003-RA,length=1051>
+##contig=<ID=OTAU000004-RA,length=735>
+##contig=<ID=OTAU000005-RA,length=456>
+
+```
+
 ------
 <div id='id-section11'/>
 ### Page 11:
