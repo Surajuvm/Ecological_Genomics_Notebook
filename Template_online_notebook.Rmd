@@ -889,6 +889,7 @@ samtools tview <filename.fm.sorted.bam>
 ```
 It opens in a nice window where we can see heterozygous sites in the alignment. 
 Clicking N in here shows the nucleotides in colours. 
+
 ------
 <div id='id-section10'/>
 ### Page 10: February 28, 2018 - Diversity and Site Frequency Spectrum
