@@ -860,10 +860,32 @@ We will use PuTTY.
 1) Convert sam file into a bam file format. It helps to process data more efficiently but it's machine readable and not human readable.
 We will fix reads that are no longer mated, remove duplicates (PCR), index the data (for computational efficiency), and call SNPs and genotypes.
 
+We then created a bash file and wrote following bash script.
+
+```
+
+samtools depth WA_PP1_M3_bwamem.bam
+
+# Fix mate pairs between paired end reads that have been orphaned
+samtools fixmate WA_PP1_M3_bwamem.bam WA_PP1_M3_bwamem.fm.bam
+
+#Sort alignment
+samtools sort -@ 4 WA_PP1_M3_bwamem.fm.bam WA_PP1_M3_bwamem.fm.sort.bam
+
+# Remove PCR duplicates
+samtools rmdup WA_PP1_M3_bwamem.fm.sort.bam WA_PP1_M3_bwamem.fm.sort.rmdup.bam
+
+#Index final alignment for fast processing, makes has table
+samtools index WA_PP1_M3_bwamem.fm.sort.bam
+
+#Pause here; look at result before proceeding to SNP calling
+
+```
+
 In samtools tview it opens a light weight alignment viewer
 The code is 
 ```
-samtools tview <filename> 
+samtools tview <filename.fm.sorted.bam> 
 ```
 It opens in a nice window where we can see heterozygous sites in the alignment. 
 Clicking N in here shows the nucleotides in colours. 
