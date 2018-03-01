@@ -889,6 +889,10 @@ samtools tview <filename.fm.sorted.bam>
 ```
 It opens in a nice window where we can see heterozygous sites in the alignment. 
 Clicking N in here shows the nucleotides in colours. 
+On another note, if you do not have indexed bam file in the same loacation as your bam file, 
+samtools option won't work. This happened with we during practice session. This makes sense
+why we indexed it and made .bam.bai file but used .bam file for all other purposes :)
+  
 
 ------
 <div id='id-section10'/>
@@ -1104,6 +1108,14 @@ It got saved with that name along with log files which were automatically create
 ##contig=<ID=OTAU000005-RA,length=456>
 
 ```
+I wanted to practice things we did in class so at home, I copied both files containing reads and scripts into my practice directory
+The command I used was
+```
+cp WA_PP1_M3_bwamem.fm.sorted.rmdup.bam CallSNP.sh ~/practice/
+
+```
+WA_PP1_M3_bwamem.fm.sorted.rmdup.bam contained our reads (sam file) after it had been converted to bam, fixmated, sorted and PCR duplicates removed
+
 
 ------
 <div id='id-section11'/>
