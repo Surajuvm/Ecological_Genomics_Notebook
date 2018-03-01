@@ -689,7 +689,7 @@ plotMA(res)
 plotMA(res_pop, main="DESeq2", ylim=c(-2,2))
 abline(h=c(-1,1), col="blue", lwd=2)
 
-
+<img src ="images/MAPlot.png" />
 ############## PCA
 
 
