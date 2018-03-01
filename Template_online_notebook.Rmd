@@ -840,7 +840,9 @@ pheatmap(mat_scaled, labels_col = c("WA-PP1-F", "WA-PP1-M", "NC-PP1-F", "NC-PP1-
 
 
 ```
-<img src ="images/MAplot.png" />
+<table> <tr> <td> <img sr="images/MAplot.png" /> </td> <td> <img sr="images/MAplot.png" /> </td></tr> 
+<tr> <td> <img sr="images/MAplot.png" /> </td> <td> <img sr="images/MAplot.png" /> </td></tr>
+</table>
 ------
 <div id='id-section8'/>
 ### Page 8:
