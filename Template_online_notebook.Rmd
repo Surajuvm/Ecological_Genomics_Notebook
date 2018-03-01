@@ -898,15 +898,15 @@ why we indexed it and made .bam.bai file but used .bam file for all other purpos
 <div id='id-section10'/>
 ### Page 10: February 28, 2018 - Diversity and Site Frequency Spectrum
 
-We took our previous file, and now look for the flatstats.
+We took our previous file, and now look for the flagstats.
 The codes we used is
 ```
-samtools flatstats <filename.sorted.bam>
+samtools flagstats <filename.sorted.bam>
 ```
-We got the error message. It was because of stats in flatstat. We ran the code again using 
+We got the error message. It was because of stats in flagstat. We ran the code again using 
 
 ```
-samtools flatstat <filename.sorted.bam>
+samtools flagstat <filename.sorted.bam>
 
 ```
 
