@@ -1126,7 +1126,108 @@ WA_PP1_M3_bwamem.fm.sorted.rmdup.bam contained our reads (sam file) after it had
 
 ------
 <div id='id-section11'/>
-### Page 11:
+### Page 11: 5th March 2018 - Comaparing SNP and genotype calls results between samtools and read2snps
+
+We will use different tools (samtools and read2snps) and different parameters for max missing(0.5, 0.8, 1.0) and compare the results.
+For me, I have to analyze the file using samtools with GQ of 20 and max missing of 0.5
+
+In the snps directory (shared space) Steve had kept two files, each for samtools and read2snps analysis. 
+```
+ vcftools --vcf OTAU_2018_samtools.vcf --min-alleles 2 --max-alleles 2 --minGQ 200 --max-missing 0.5 --maf 0.01 --het --out ~/myresults/samtoolsmiss0.5
+ 
+ ```
+ I got 0 sites out of 611928 possible sites. This was because I kept GQ of 200, Steve noticed it and I changed into 20, and it gave 30,948 
+ 
+ Using R in PuTTY
+ 
+ type R and enter
+ 
+ ```
+ > df <- read.table("samtoolsmiss0.5.het", header = T)
+> str(df)
+'data.frame':   72 obs. of  5 variables:
+ $ INDV   : Factor w/ 72 levels "IT_AD4_F1_","IT_AD4_F2_",..: 1 2 3 4 5 6 8 9 10 7 ...
+ $ O.HOM. : int  15331 12022 17899 12336 16678 17938 16783 26599 19359 19358 ...
+ $ E.HOM. : num  15378 12111 18061 12317 16770 ...
+ $ N_SITES: int  15934 12543 18723 12752 17376 18637 17825 28405 20405 20481 ...
+ $ F      : num  -0.0846 -0.2048 -0.2449 0.0438 -0.1522 ...
+
+ ```
+ Last row, F is the inbreeding coefficient. for a heterozygous, it would be negative. if the population is more or less randomly mating,
+ this number should be around zero. for positive value, there are excess of homozygotes.
+ 
+ ```
+ > summary(df$F)
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max.
+-0.94263 -0.24513  0.11635  0.03781  0.32014  0.49884
+
+ ```
+ Comparing the mean and sd of samtools and read2snps using different parameters. We saw consistency in data using read2snp whereas samtools 
+ had varying results. one of the reason might be read2snps have paralogy filter on it. We then agreed to move forward with read2snps tool
+ and keep 0.8 as the max missing filter. 
+ 
+ To quit R from the server
+ ```
+quit()
+ ```
+ We then gave the following command in the snps directory
+ ```
+ ]$ vcftools --vcf OTAU_2018_reads2snps_DP10GP95.vcf --min-alleles 2 --max-alleles 2  
+ --max-missing 0.5 --maf 0.01 --recode
+ --out ~/myresults/OTAU_2018_read2snps_DP10GP95_biallelic_MAF0.1_Miss0.8.vcf
+ 
+ ```
+ It took a while, and our final vcf file was saved in my home directory within myresults 
+ 
+From this vcf file, we can determine SFS (Site frequency Spectrum), Nucleotide diversity 
+(Pi syn and Pi nonsyn), Population structure (Admixture, PCA) 
+
+vcftools can output frequency of alleles. we can use --freq2 to output allele statistics. 
+
+```
+grep "IT" /data/project_data/beetles/metadata/cols_data.txt | cut -f 1
+
+```
+To save this file 
+
+```
+grep "IT" /data/project_data/beetles/metadata/cols_data.txt | cut -f 1 >IT.inds
+
+```
+```
+ vcftools --vcf OTAU_2018_read2snps_DP10GP95_biallelic_MAF0.1_Miss0.8.vcf.recode.vcf --keep IT.inds --freq2 --out IT
+
+```
+
+Parameters as interpreted:
+        --vcf OTAU_2018_read2snps_DP10GP95_biallelic_MAF0.1_Miss0.8.vcf.recode.vcf
+        --keep IT.inds
+        --freq2
+        --out IT
+
+Keeping individuals in 'keep' list
+After filtering, kept 24 out of 72 Individuals
+Outputting Frequency Statistics...
+After filtering, kept 246969 out of a possible 246969 Sites
+Run Time = 5.00 seconds
+
+```
+[sbhatta4@pbio381 myresults]$ head IT.frq
+CHROM   POS     N_ALLELES       N_CHR   {FREQ}
+OTAU000001-RA   63      2       30      0.6     0.4
+OTAU000001-RA   93      2       30      0.6     0.4
+OTAU000001-RA   96      2       30      1       0
+OTAU000001-RA   129     2       26      0.961538        0.0384615
+OTAU000001-RA   459     2       22      0.954545        0.0454545
+OTAU000001-RA   548     2       30      1       0
+OTAU000001-RA   552     2       26      0.730769        0.269231
+OTAU000001-RA   576     2       26      0.961538        0.0384615
+OTAU000001-RA   578     2       26      1       0
+
+```
+My results were different from others here because in the vcftools command
+I kept max missing 0.5, instead of 0.8. So I will be redoing it again. 
+
 ------
 <div id='id-section12'/>
 ### Page 12:
