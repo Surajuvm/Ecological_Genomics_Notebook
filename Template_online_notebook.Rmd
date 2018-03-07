@@ -1230,7 +1230,100 @@ I kept max missing 0.5, instead of 0.8. So I will be redoing it again.
 
 ------
 <div id='id-section12'/>
-### Page 12:
+### Page 12: 7th March 2018, Population Genomics Day 3
+
+Today we did grep and isolated WA and NC population data as well. 
+So we had three freq files, each for IT, WA and NC populations saved in myresults under my directory.
+These files were then transfered to my local hard drive by using WinSCP.
+We will use these .frq files to plot in R1
+
+```
+setwd("~/Genomics/Beetles/Population Genomics")
+
+IT <- read.table ('IT.frq', skip=1, header=F)
+head(IT)
+
+```
+
+We are creating here the site frequency spectrum. It's a histogram of allele frequency.
+it contains much information about population history. Relative frequency form 0 to 1 in y-axis,
+relative frequencies of SNP frequencies in x-axis. The shape of this curve tell information 
+about Ne, changes in Ne overtime like bottleneck, expansions. If we look at 
+nonsynonomous and synonomous sites, we can even predict selection. 
+
+We will make histogram in R using 'hist' function.
+
+We made the histograms
+
+Then we went again to the PuTTY and did thin command, we will do admixture analysis now. 
+There are lot of times doing population genomics analysis that we have to go back and forth
+between R and PuTTY. Thinning of 1000 means, randomly select a SNP and then select another 
+SNP at least 1000 bp apart. 
+
+```
+ vcftools --vcf OTAU_2018_read2snps_DP10GP95_biallelic_MAF0.1_Miss0.8.vcf.recode.vcf --thin 1000 --recode
+
+
+VCFtools - 0.1.14
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+        --vcf OTAU_2018_read2snps_DP10GP95_biallelic_MAF0.1_Miss0.8.vcf.recode.vcf
+        --thin 1000
+        --recode
+
+After filtering, kept 72 out of 72 Individuals
+Outputting VCF file...
+After filtering, kept 11964 out of a possible 133291 Sites
+Run Time = 1.00 seconds
+
+```
+There is a software called PGDSpider (runs on java and already installed on our server) which can be used to generate multiple types of files. 
+It requires couple of files 1) (population files (beetle.pop - individual id and population they belong to), 2)(spid file, beetle. spid, it tells 
+PGDSpider what file types we are going to convert) and a 3) bash script. 
+
+Steve had already created these files and put it in shared space. We would copy beetle.pop file into myscripts
+
+```
+[sbhatta4@pbio381 myscripts]$ cp /data/project_data/beetles/metadata/beetles.pop .
+
+because we were in the directory we wanted to copy the file to, we just put . at the end. (cool trick) :) Thanks Steve.
+```
+We then copied three files, beetle.spid, beetles.pop and vcf2geno.sh into myscripts 
+
+```
+ll * geno command will enlist all the files having geno.
+```
+
+We copied out.recode.vcf.geno file into myresults
+
+We then made a bash script
+
+```
+#!/bin/bash
+
+for K in {1..10}
+
+do
+
+admixture -j 4 --cv 10 ~/myresults/out.recode.vcf.geno $K tee log${K}.out
+
+done
+
+grep "CV" log*out >chooseK.txt
+
+
+```
+We saved the file by typing : and w filename "admix.sh" 
+
+We saw admix.sh file in our results, but it was not executable. 
+Then we made it executable by giving chmod u+x command.
+
+(Somehow it did not work) We will get back to it after spring break :) 
+
+Happy Holidays Fellas !!
+
+
 ------
 <div id='id-section13'/>
 ### Page 13:
