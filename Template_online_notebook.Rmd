@@ -36,9 +36,9 @@ Science should be reproducible and one of the best ways to achieve this is by lo
 * [Page 8: 2018-02-21](#id-section8). RNAseq data analysis - GO enrichment
 * [Page 9: 2018-02-26](#id-section9). Population Genomics Day 1 - Intro into Genotype and SNP Calling
 * [Page 10: 2018-02-28](#id-section10). Population Genomics Day 2 - Diversity and Site Frequency Spectrum
-* [Page 11:2018-03-05](#id-section11).  Population Genomics Day 3 - Comaparing SNP and genotype calls results between samtools and read2snps
-* [Page 12: 2018-03-07](#id-section12). Population Genomics Day 4 - Site Frequency Spectrum (SFS) and Admixture Intro
-* [Page 13:](#id-section13).
+* [Page 11: Assignment 1 ](#id-section11).  RNA-seq for Gene Expression Analsysis
+* [Page 12: 2018-03-05](#id-section12). Population Genomics Day 3 - Comaparing SNP and genotype calls results between samtools and read2snps
+* [Page 13:2018-03-07](#id-section13). Population Genomics Day 4 - Site Frequency Spectrum (SFS) and Admixture Intro
 * [Page 14:](#id-section14).
 * [Page 15:](#id-section15).
 * [Page 16:](#id-section16).
@@ -1242,7 +1242,289 @@ WA_PP1_M3_bwamem.fm.sorted.rmdup.bam contained our reads (sam file) after it had
 
 ------
 <div id='id-section11'/>
-### Page 11:5th March 2018 - Comaparing SNP and genotype calls results between samtools and read2snps
+### Page 11: Assignment 1 - RNA-seq for Gene Expression Analysis 
+
+Scripts for DESeq Analysis in R1
+
+1) Scripts for Differential gene expression and visualization in MA, PCA and Heat maps. Also creating .csv file for GO analysis
+```
+
+setwd("~/Genomics/Beetles/counts/Assignment1")
+library (DESeq2)
+library(ggplot2)
+
+CountsTable <- read.delim ("counts_data_WAvsNC.txt", header = TRUE, stringsAsFactors = TRUE, row.names = 1)
+CountData <- as.matrix(CountsTable)
+head(CountData)
+
+ColsTable <- read.delim("cols_data_WAvsNC.txt", header = TRUE, stringsAsFactors = TRUE, row.names = 1)
+ColData <-as.data.frame(ColsTable)
+head(ColData)
+
+Data1 <- DESeqDataSetFromMatrix(countData = CountData, colData = ColData, design = ~ population)
+dim(Data1)
+
+Data1 <- Data1[rowSums(counts(Data1)) > 1, ]
+dim(Data1)
+
+Data1 <- DESeq(Data1, modelMatrixType = "standard") 
+summary(Data1)
+
+Result1 <- results(Data1)
+str (Result1)
+
+Result1 <- Result1 [order(Result1$padj),]
+summary (Result1)
+
+sum(Result1$padj < 0.1, na.rm = TRUE)
+
+Results_pop <- results(Data1, name = "population_WA_vs_NC")
+Results_pop <- Results_pop [order(Results_pop$padj),]
+
+summary(Results_pop)
+
+######## MA Plot
+
+plotMA(Result1, ylim=c(-2,2))
+
+plotMA(Results_pop, main="DESeq2-WAvsNC", ylim=c(-2,2))
+abline(h=c(-1,1), col="blue", lwd=2)
+
+########### PCA Plot
+Data2 <- vst(Data1, blind = FALSE)
+
+Data3 <- plotPCA(Data2, intgroup=c("population"), returnData = TRUE)
+percentVar <- round(100*attr(Data3, "percentVar"))
+
+pdf(file = "PCA_Overall_Population_WA_vs_NC.pdf", height=5.5, width = 5.5)
+ggplot(Data3, aes(PC1, PC2, color=population)) +
+  geom_point(size=4, alpha=0.85) +
+  xlab(paste0("PC1:", percentVar[1], "%variance")) +
+  ylab(paste0("PC2:", percentVar[2], "%variance")) +
+  theme_bw()
+dev.off()
+
+######## Heat Map
+
+library("RColorBrewer")
+library("pheatmap")
+
+rld <- rlog(Data1, blind = FALSE)
+
+sampleDists = dist(t(assay(rld)))
+sampleDistMatrix = as.matrix(sampleDists)
+rownames(sampleDistMatrix) = paste(rld$population)
+colnames(sampleDistMatrix) = paste(rld$population)
+colors = colorRampPalette(rev(brewer.pal(9, "Blues"))) (250)
+pheatmap(sampleDistMatrix, clustering_distance_rows = sampleDists, clustering_distance_cols = sampleDists, col = colors)
+
+######## Creating .csv file needed for GO analysis
+
+neglogpval = as.matrix(-log(Result1$pvalue)) 
+head(neglogpval)
+Result1_negpval = cbind(row.names(Result1), neglogpval)
+colnames(Result1_negpval) = c("gene", "neglogpval")         
+write.csv(Result1_negpval, file = "DGE_NCvsWA_neglogval.csv", row.names = F, quote = F)
+
+```
+
+2) Script for WA vs NC Females
+
+```
+setwd("~/Genomics/Beetles/counts/Assignment1/Sex specific analysis")
+
+library(DESeq2)
+library(ggplot2)
+
+countsTable <- read.delim("counts_females_WAvsNC.txt", header = TRUE, row.names = 1)
+countData <- as.matrix (countsTable)
+head(countData)
+
+conds <- read.delim("cols_data_females_WAvsNC.txt", header = TRUE, row.names = 1)
+head(conds)
+colData <- as.data.frame(conds)
+head(colData)
+
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ population)
+
+dim(dds)
+
+dds <- dds[rowSums(counts(dds))>1,]
+dim(dds)
+
+dds <- DESeq(dds, modelMatrixType = "standard")
+resultsNames(dds)
+
+res <- results(dds)
+
+str(res)
+
+res <- res[order(res$padj),]
+summary(res)
+sum(res$padj <0.1, na.rm=TRUE)
+
+
+neglogpval = as.matrix(-log(res$pvalue))   #script for GO Mann-Whitney test requires this format
+head(neglogpval)
+res_negpval = cbind(row.names(res), neglogpval)
+colnames(res_negpval)=c("gene", "neglogpval")
+
+write.csv(res_negpval, file="DGE_NCvsWA_Females.csv", row.names=F, quote=F)
+
+###### Creating MA Plot
+
+plotMA(res)
+
+plotMA(res, main="DESeq2-WAvsNC_Females", ylim=c(-2,2))
+abline(h=c(-1,1), col="blue", lwd=2)
+
+##### Creating Heatmap
+
+library("RColorBrewer")
+library("pheatmap")
+
+sampleDists = dist(t(assay(rld)))
+sampleDistMatrix = as.matrix(sampleDists)
+rownames(sampleDistMatrix) = paste(rld$population, rld$devstage, sep = "-")
+colnames(sampleDistMatrix) = NULL
+colors = colorRampPalette(rev(brewer.pal(9, "Blues")))(250)
+
+pheatmap(sampleDistMatrix, clustering_distance_rows = sampleDists, clustering_distance_cols = sampleDists, color = colors)
+
+#############
+
+colData$group <- factor(paste0(colData$population, "-", colData$devstage))
+head(colData)
+
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ group)
+dds <- dds[rowSums(counts(dds)) > 1,]
+dim(dds)
+
+
+dds <- DESeq(dds, modelMatrixType = "expanded", parallel = T)
+
+resultsNames(dds)
+
+res_pop_PP1_F <- results(dds, contrast = list(c("group_WA.AD4_vs_NC.AD4"), c("group_WA.L3L_vs_NC.AD4")), listValues = c (1/2, -1/2), alpha = 0.05)
+
+res_pop_PP1_F <- res_pop_PP1_F[order(res_pop_PP1_F$padj),]
+head(res_pop_PP1_F)
+
+summary(res_pop_PP1_F)
+
+sig_pop_PP1_F <- res_pop_PP1_F[which(res_pop_PP1_F$padj < 0.05),] # great way to subset data
+dim(sig_pop_PP1_F)
+
+################### Pull out significant genes to be able to make a heatmap
+
+sig_pop_PP1_F_df <- as.data.frame(sig_pop_PP1_F)
+sig_pop_PP1_F_df$Row.names <- rownames(sig_pop_PP1_F_df)
+dim(sig_pop_PP1_F_df)
+
+
+genesOfInterest_pop_PP1_F <- c(sig_pop_PP1_F_df$Row.names)
+length(genesOfInterest_pop_PP1_F)
+
+vsd <- vst(dds, blind = FALSE)
+
+######
+
+dds$combined = factor(paste0(dds$population, "-", dds$devstage))
+dds$combined <- factor(dds$combined, levels=c("WA-L3L","WA-PP1","WA-PD1","WA-AD4","NC-L3L","NC-PP1","NC-PD1","NC-AD4"), labels=c("WA-L3L","WA-PP1","WA-PD1","WA-AD4","NC-L3L","NC-PP1","NC-PD1","NC-AD4"))
+
+baseMeanPerGrp <- sapply( levels(dds$combined), function(lvl) rowMeans( counts(dds,normalized=TRUE)[,dds$combined == lvl] ) )
+
+head(baseMeanPerGrp)
+dim(baseMeanPerGrp)
+
+# pulls out normalized counts (avg of 3 reps) for all of our significant genes
+m <- baseMeanPerGrp[genesOfInterest_pop_PP1_F, c("WA-L3L","WA-PP1","WA-PD1","WA-AD4","NC-L3L","NC-PP1","NC-PD1","NC-AD4")]
+
+head(m)
+dim(m)
+
+mat_scaled = t(apply(m,1, scale))
+head(mat_scaled)
+
+library(pheatmap)
+
+pheatmap(mat_scaled, labels_col = c("WA-L3L","WA-PP1","WA-PD1","WA-AD4","NC-L3L","NC-PP1","NC-PD1","NC-AD4"), cluster_cols = TRUE, cluster_rows = FALSE)
+
+```
+
+3) Script for WA vs NC Males
+
+```
+setwd("~/Genomics/Beetles/counts/Assignment1/Sex specific analysis")
+
+library(DESeq2)
+library(ggplot2)
+
+countsTable <- read.delim("counts_males_WAvsNC.txt", header = TRUE, row.names = 1)
+countData <- as.matrix (countsTable)
+head(countData)
+
+conds <- read.delim("cols_data_males_WAvsNC.txt", header = TRUE, row.names = 1)
+head(conds)
+colData <- as.data.frame(conds)
+head(colData)
+
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ population)
+
+dim(dds)
+
+dds <- dds[rowSums(counts(dds))>1,]
+dim(dds)
+
+dds <- DESeq(dds, modelMatrixType = "standard")
+resultsNames(dds)
+
+res <- results(dds)
+
+str(res)
+
+res <- res[order(res$padj),]
+summary(res)
+sum(res$padj <0.1, na.rm=TRUE)
+
+
+###### Creating MA Plot
+
+plotMA(res)
+
+plotMA(res, main="DESeq2-WAvsNC_Males", ylim=c(-2,2))
+abline(h=c(-1,1), col="blue", lwd=2)
+
+
+###### GO Analysis
+
+write.csv(res, file="DGE_WAvsNC_Males.csv", row.names=T, quote=F) #this outputs results as csv file
+
+neglogpval = as.matrix(-log(res$pvalue))   #script for GO Mann-Whitney test requires this format
+head(neglogpval)
+res_negpval = cbind(row.names(res), neglogpval)
+colnames(res_negpval)=c("gene", "neglogpval")
+
+write.csv(res_negpval, file="DGE_WAvsNC_Males_neglogpval.csv.csv", row.names=F, quote=F)
+##### Creating Heatmap
+
+library("RColorBrewer")
+library("pheatmap")
+
+sampleDists = dist(t(assay(rld)))
+sampleDistMatrix = as.matrix(sampleDists)
+rownames(sampleDistMatrix) = paste(rld$population, rld$devstage, sep = "-")
+colnames(sampleDistMatrix) = NULL
+colors = colorRampPalette(rev(brewer.pal(9, "Oranges")))(250)
+
+pheatmap(sampleDistMatrix, clustering_distance_rows = sampleDists, clustering_distance_cols = sampleDists, color = colors)
+
+```
+
+
+------
+<div id='id-section12'/>
+### Page 12: 5th March 2018 - Comaparing SNP and genotype calls results between samtools and read2snps
 
 We will use different tools (samtools and read2snps) and different parameters for max missing(0.5, 0.8, 1.0) and compare the results.
 For me, I have to analyze the file using samtools with GQ of 20 and max missing of 0.5
@@ -1344,9 +1626,10 @@ OTAU000001-RA   578     2       26      1       0
 My results were different from others here because in the vcftools command
 I kept max missing 0.5, instead of 0.8. So I will be redoing it again. 
 
+
 ------
-<div id='id-section12'/>
-### Page 12:7th March 2018, Population Genomics Day 4 - SFS and Admixture
+<div id='id-section13'/>
+### Page 13: 7th March 2018, Population Genomics Day 4 - SFS and Admixture
 
 Today we did grep and isolated WA and NC population data as well. 
 So we had three freq files, each for IT, WA and NC populations saved in myresults under my directory.
@@ -1438,11 +1721,6 @@ Then we made it executable by giving chmod u+x command.
 (Somehow it did not work) We will get back to it after spring break :) 
 
 Happy Holidays Fellas !!
-
-
-------
-<div id='id-section13'/>
-### Page 13:
 ------
 <div id='id-section14'/>
 ### Page 14:
