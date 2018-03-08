@@ -1714,7 +1714,7 @@ We made the histograms
 </tr>
 <tr>
 <td> <img src = "images/SFS_NC.png" />  </td>
-<td> <img src = "images/SFS_IT_WA_NC.png> </td>
+<td> <img src = "images/SFS_IT_WA_NC.png /> </td>
 </tr>
 </table>
 
