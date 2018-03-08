@@ -962,6 +962,8 @@ you can go the command option (type cmd in run bar) and within command, type Per
 that is installed in your system. If it doesn't give back any result, the perl is either not installed or not active. For 
 MWU script to work, perl must be present and active. 
 
+<img src = "images/WAvsNC_population.png" /> <img src = "images/WAvsNC_absValue_0.5.png" />
+
 
 ------
 <div id='id-section9'/>
