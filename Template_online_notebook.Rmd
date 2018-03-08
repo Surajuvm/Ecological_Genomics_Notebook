@@ -1657,7 +1657,65 @@ nonsynonomous and synonomous sites, we can even predict selection.
 
 We will make histogram in R using 'hist' function.
 
+```
+setwd("~/Genomics/Beetles/Population Genomics")
+
+IT <- read.table ('IT.frq', skip=1, header=F)
+head(IT)
+
+# V1  V2 V3 V4       V5        V6
+# 1 OTAU000033-RA  90  2 40 1.000000 0.0000000
+# 2 OTAU000033-RA 468  2 44 0.954545 0.0454545
+# 3 OTAU000033-RA 510  2 46 0.956522 0.0434783
+# 4 OTAU000033-RA 582  2 46 0.869565 0.1304350
+# 5 OTAU000033-RA 639  2 48 0.750000 0.2500000
+# 6 OTAU000033-RA 717  2 46 0.956522 0.0434783
+
+dim(IT)
+
+NC <- read.table ('NC.frq', skip=1, header=F)
+WA <- read.table ('WA.frq', skip=1, header=F)
+
+####### making histogram 
+hist(IT$V6, col = "red")
+# the axis showed number of counts, not the relative frequency
+
+df <- hist(IT$V6, plot=F)
+df$counts <- df$counts/sum(df$counts)
+plot(df$counts, type="l")
+
+# this gave our SFC. In other two sites, during the introduciton period, if the population underwent bottleneck, we would expect a decrease in relative frequency.
+hist(NC$V6, col="blue")
+NC <- hist(NC$V6, plot=F)
+NC$counts <- NC$counts/sum(NC$counts)
+plot(NC$counts, type="l")
+
+#### plotting all the lines in the same graph
+WA <- hist(WA$V6, plot=F)
+WA$counts <- WA$counts/sum(WA$counts)
+plot(WA$counts, type="l")
+
+IT <- hist(IT$V6, plot=F)
+IT$counts <- IT$counts/sum(IT$counts)
+plot(IT$counts, type="l")
+
+plot(IT$counts, type = "l", col="red", lwd=1.5, ylim=c(0,0.5))
+lines(NC$counts, col = "blue", lwd = 1.5)
+lines(WA$counts, col="green", lwd = 1.5)
+
+```
+
 We made the histograms
+
+<table style="width:100%> 
+<tr> 
+<td> <img src = "images/SFS_IT.png" /> </td>
+<td> <img src = "images/SFS_WA.png" /> </td>
+<td> <img src = "images/SFS_NC.png" />  </td>
+</tr>
+</table>
+
+
 
 Then we went again to the PuTTY and did thin command, we will do admixture analysis now. 
 There are lot of times doing population genomics analysis that we have to go back and forth
