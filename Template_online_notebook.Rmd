@@ -840,10 +840,10 @@ pheatmap(mat_scaled, labels_col = c("WA-PP1-F", "WA-PP1-M", "NC-PP1-F", "NC-PP1-
 
 
 ```
-<table> <tr> <td align="middle">  <img src="images/MAplot.png" />  </td></tr>  
-<tr> <td> <table> <tr> <td> <img src="images/MAplot.png" /> </td> <td> <img src="images/MAplot.png" /> </td></tr>
-</table> </td> </tr>
-</table>
+<table> <tr> <td> <img src="images/MAplot.png" /> <img src = "images/PCAplot.png" </td></tr>  
+<tr> <td> <img src="images/MAplot.png" />  <img src="images/MAplot.png" /> </td></tr>
+</table> 
+
 ------
 <div id='id-section8'/>
 ### Page 8: RNAseq data analysis - GO enrichment
