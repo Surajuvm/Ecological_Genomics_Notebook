@@ -965,7 +965,7 @@ MWU script to work, perl must be present and active.
 
 ------
 <div id='id-section9'/>
-### Page 9: Population Genomics - Day 1: Intro into Genotype and SNP Calling
+### Page 9:Population Genomics - Day 1: Intro into Genotype and SNP Calling
 
 Today we will call SNPs and genotype from the sam file that we have for our Beetle's RNAseq data.
 Several processing steps to process our sam file. 
@@ -1242,7 +1242,7 @@ WA_PP1_M3_bwamem.fm.sorted.rmdup.bam contained our reads (sam file) after it had
 
 ------
 <div id='id-section11'/>
-### Page 11: 5th March 2018 - Comaparing SNP and genotype calls results between samtools and read2snps
+### Page 11:5th March 2018 - Comaparing SNP and genotype calls results between samtools and read2snps
 
 We will use different tools (samtools and read2snps) and different parameters for max missing(0.5, 0.8, 1.0) and compare the results.
 For me, I have to analyze the file using samtools with GQ of 20 and max missing of 0.5
@@ -1346,7 +1346,7 @@ I kept max missing 0.5, instead of 0.8. So I will be redoing it again.
 
 ------
 <div id='id-section12'/>
-### Page 12: 7th March 2018, Population Genomics Day 4 - SFS and Admixture
+### Page 12:7th March 2018, Population Genomics Day 4 - SFS and Admixture
 
 Today we did grep and isolated WA and NC population data as well. 
 So we had three freq files, each for IT, WA and NC populations saved in myresults under my directory.
