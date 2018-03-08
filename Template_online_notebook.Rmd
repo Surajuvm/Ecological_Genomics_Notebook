@@ -1707,7 +1707,7 @@ lines(WA$counts, col="green", lwd = 1.5)
 
 We made the histograms
 
-<table style="width:100%> 
+<table> 
 <tr> 
 <td> <img src = "images/SFS_IT.png" /> </td>
 <td> <img src = "images/SFS_WA.png" /> </td>
