@@ -1246,7 +1246,7 @@ WA_PP1_M3_bwamem.fm.sorted.rmdup.bam contained our reads (sam file) after it had
 <div id='id-section11'/>
 ### Page 11: Assignment 1 - RNA-seq for Gene Expression Analysis 
 
-<embed src="/images/PBIO381-Assignment1-DESeq for Gene Expression Analysis.pdf" width="800px" height="2100px" />
+<embed src="PBIO381-Assignment1-DESeq for Gene Expression Analysis.pdf" width="800px" height="2100px" />
 
 
 Scripts for DESeq Analysis in R1
