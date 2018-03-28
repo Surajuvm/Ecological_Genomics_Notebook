@@ -1987,6 +1987,7 @@ The assignment is due next Monday.
 <div id='id-section17'/>
 ### Page 17: Assignment 2 - Exploring demographic history of dung beetles 
 
+
 SNPs were filtered using vcftools by the following code
 
 ```
