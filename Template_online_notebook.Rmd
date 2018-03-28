@@ -1789,19 +1789,368 @@ Then we made it executable by giving chmod u+x command.
 Happy Holidays Fellas !!
 ------
 <div id='id-section14'/>
-### Page 14:
+### Page 14: Spring Break
+During the spring break, I decided to practice analyzing data sets. Since, we did not see lot of 
+differences between WA and NC population of dung beetles, I thought maybe we could compare RNAseq data
+of our beetles with Colorado Potato beetles. So I went to the i5K website checked if 
+RNAseq data of colorado potato beetles were present. They were :) I connected to UVM's server and logged into PuTTY. 
+I copied the link and and entered the following code in the PuTTY after creating a directory called 
+Colorado_Beetles in my home directory. 
+```
+wget https://i5k.nal.usda.gov/sites/default/files/data/Arthropoda/lepdec-%28Leptinotarsa_decemlineata%29/Current%20Genome%20Assembly/4.Transcriptomes%20and%20RNA-Seq/2nd%20instar%20whole%20tissue%20samples%20from%2012%20individuals%20from%20a%20lab%20colony/accepted_hits.bam
+
+```
+It took around 7 minutes to download the .bam files of colorado beetels into the server. The sequence was derived from
+2nd instar (larval samples) whole tissue samples from 12 individuals from a lab colony. 
+Since these are trancriptome of larval samples, we think that it's best to compare it against the L3L data set that 
+we have from different populations (WA and NC of dung beetles).
+The downloaded file name was accepted_hits.bam 
+I did head command to peek into it but the display was not friendly. Then I realized that .bam files are 
+binary files in a language that only computer understands. So we are cool until here :) 
+
+I checked the basic info of the file from where it was downloaded.
+
+```
+- Data provider: Nick Miller
+- Data source: NA
+- Publication status: Unpublished - please follow Toronto/Ft. Lauderdale conditions of data re-use.
+- Sequencing platform: Illumina Hi-seq 2000
+- Analysis provider: Aligned by Dr. Schoville and Justin Clements
+- Alignment method: Tophatv2.0.9 alignment
+```
+So this RNA seq data has been aligned by Tophat v2.0.9 alignment. Maybe we should align our reads (dung beetles) with the 
+same alignment tool so that we can compare them. 
+
+I then looked into our shared space. There was "tophat" stored in the popgen directory.
+
+We also downloaded the accepted_hits.bam.bai, an index file for the previous .bam file. 
+juntions.bed file was also downloaded from the same place. .bed file will come handy during alignment. 
+This website contains information on usage and different options in Tophat
+```
+https://ccb.jhu.edu/software/tophat/manual.shtml
+```
+First, I converted the .bam file into .sam file using samtools view command. 
+
 ------
 <div id='id-section15'/>
-### Page 15:
+### Page 15: March 19, 2018 Population Genomics Day 5 - ADMIXTURE Analysis and visualization in R
+
+Hiccups in last class were due to the location of some files.
+We will look for the evidence of likely value of K and bring admixture results in our local computer and 
+generate ancestry plots. We will compare that to PCA on the SNP data (one we saw in today's Pfifer's paper) 
+We will have next homework assignment today. Look at demographic history of population from SNP data.
+
+We copied beetle.pop, beetle.spid, and vcf2geno file into my scripts
+
+We then opened .spid file in vim
+We just looked at it. Things were all set :)
+
+Then we opened bash script. 
+2G says how much memory to be assigned to the job, i.e 2 gb. then the path to the java program
+to the pgd spider. next is the input file, (this will change, the one we thinned in last class)
+then the output of file - output format is the where you can specify any options of pgd spider 
+We will use EIGENSOFT which generates geno format which is read by admixture.
+
+We then ran the command. It took few minutes
+
+We can sort files in a directory by 
+```
+ll -rt
+
+```
+We had the file generated in myresults directory we then did head
+We saw something like this
+```
+ head out.recode.vcf.geno
+229922222222222222929222109112221219211221921119922292129229222222922222
+292929222222222212222222229222229222222222222222212992229229222222922222
+299111111221122222222922122902222219112922221122122192222229202129112219
+112111212111212121011221221222211222221221212221191990129111222211110122
+222222122222222211222222122222222222222222212222222222222222222222222222
+222212212221212222222120111022222200011022200220092192222221122222222122
+221111112211211221021110000001111200000010100100122122111120121211110010
+222922222222222212222992219222222222222922222121222992222222222222222221
+222222212212222222992992112222211229222222229919022122229922212129922229
+922222212122221229192292222292222229121122212222291292299219011121122012
+```
+In here, 0 means AA (assuming its AA in the reference genome), 1 = AT , 
+2 = TT , 9 = missing data
+
+We then opened admixture code to run on this file
+```
+vim admix.sh
+```
+Our bash script looks like this 
+
+```
+#!/bin/bash
+
+for K in {1..10}
+
+do
+
+admixture -j4 --cv10 ~/myresults/out.recode.vcf.geno $K |  tee log${K}.out
+
+done
+
+grep "CV" log*out >chooseK.txt
+
+```
+We are using K values from 1 to 10, then admixture calls -j4 (means how many threads to use;
+remember no space between j and 4, last time our script did not work because of this space.
+--CV10 means, it will take our whole data set (72 individuals) and divides into 10 chunks.
+It does the cross validation. (low value of cv means good) 
+Our expectations for looking across values of K is that; value of cv will be lowest
+with the optimum value of K, which signifies least possible error. 
+We used cv of 10. If we have more samples, then it could be higher. 
+
+Then the location of .geno file is given.
+$K sign makes K variable which we have defined above (1 to 10); then the vertical line
+| means that take the output of previous command and everything that is printed will be 
+tee (saved into something) log$K (means the name of output file) So we will have 10 
+different log files at the end.
+
+grep "CV" means to look for CV character; it looks in log files because log*out is given flag.
+Then it will output as a text file with corresponding values of K. 
+
+To add annotations to the bash file with # sign.
+
+The script did not run again. Lucy showed that between cv and 10, we need to put = sign.
+I did that and the script began  running all over. 
+
+There were many files made in myresults.
+The one .P file contains allele frequencies. 
+.Q files contain ancestry coefficients
+log file is logged output.
+
+We then did the cat command at chooseK file
+
+```
+$ cat chooseK.txt
+log10.out:CV error (K=10): 0.74078
+log1.out:CV error (K=1): 0.44089
+log2.out:CV error (K=2): 0.43635
+log3.out:CV error (K=3): 0.44475
+log4.out:CV error (K=4): 0.47987
+log5.out:CV error (K=5): 0.51791
+log6.out:CV error (K=6): 0.55534
+log7.out:CV error (K=7): 0.58280
+log8.out:CV error (K=8): 0.62599
+log9.out:CV error (K=9): 0.66978
+```
+We see the error margins. The lowest is seen in 2. 
+We are going to use value of K from 2-4
+We then download .Q files for the value of K from 2 to 4 using WinSCP 
+We also downloaded cols_data file which contained heading about population samples
+
+We then opened R and installed different packages.
+Refer to tutorials in pop day 4.
+
+For Assignment:
+Hypothesis to test: Demographic history of these samples 
+-IT is ancestral which diverged initially to NC and WA was independent colonization (for e.g)
+and check data for this hypothesis. 
+
+We used thinning 
+
+1) Choose different thinning setting (to explore the effect of not accounting for LD in the data)
+a) Create a new vcf file (will same filter flags except thinning)
+b) Run admixture following the steps we did today
+c) Assess "Robustness" of our inference of K to thinning 
+
+2) For each population (IT,NC, WA)
+a) calculate nucleotide diversity 
+Look for the evidence IT > NC, WA
+
+To calculate pie, we will used vcftools (make a new file for individual position 
+--keep ) 
+Ask vcftools for genetic diversity --site-pi 
+
+3) Pose a hypothesis for demographic history - or two or more competing ones 
+
+The assignment is due next Monday. 
+
+
+
+
 ------
 <div id='id-section16'/>
-### Page 16:
+### Page 16: Population genomics - Day 6 - Test for Selection
+
 ------
 <div id='id-section17'/>
-### Page 17:
+### Page 17: Assignment 2 - Exploring demographic history of dung beetles 
+
+SNPs were filtered using vcftools by the following code
+
+```
+$ vcftools --vcf OTAU_2018_reads2snps_DP10GP95.vcf --min-alleles 2 --max-alleles 2  
+--max-missing 0.8 --maf 0.01 --recode
+--out ~/myresults/OTAU_2018_read2snps_DP10GP95_biallelic_MAF0.1_Miss0.8.vcf
+``` 
+For admixture analysis using various thinning parameters the above code was used with different 
+thinning parameters in options (thinning 10, 100, 1000, 10000, 1000000) in the filtered output vcf file 
+```
+vcftools --vcf OTAU_2018_read2snps_DP10GP95_biallelic_MAF0.1_Miss0.8.vcf.recode.vcf --thin 1000 --recode
+
+```
+
+The bash script for admixture are as follows: 
+
+```
+#!/bin/bash
+for K in 2 3 4
+do
+admixture -j 4 --cv 10 ~/myresults/out.recode.vcf.geno $K tee log${K}.out
+done
+
+grep "CV" log*out >chooseK.txt
+
+```
+Admixture was done for different thinning values for values of K = 2,3 & 4. 
+The .Q files were then copied to the local computer and following scripts
+were used in R for admixture analysis.
+
+```
+setwd("~/Genomics/Beetles/Population Genomics/Admixture")
+library(pophelper)
+
+admixfiles = list.files(path =("Admixture1/"), full.names = T)
+admixlist = readQ(files = admixfiles, filetype = "basic")
+
+
+metadata=read.table("cols_data.txt",header=T)
+head(metadata)
+
+metadata2=data.frame(sampleid=metadata[,1], population=metadata[,2])
+
+metadata2$sampleid=as.character(metadata2$sampleid)
+metadata2$population=as.character(metadata2$population)
+
+if(length(unique(sapply(admixlist,nrow)))==1)
+  admixlist <- lapply(admixlist,"rownames<-",metadata2$sampleid)
+
+head(admixlist[[3]])
+
+###Make ancestry plots grouped by population
+
+p <- plotQ(admixlist[c(1,2,3)],
+           returnplot=T,exportplot=T,quiet=T,basesize=11, imgoutput="join", 
+           showyaxis=T, showticks=T, panelspacer=0.4, useindlab=F, showindlab=F, 
+           grplab=metadata2[2], grplabsize=3, linesize=1, barsize=1, pointsize=3, 
+           panelratio=c(4,1), divsize = 0.75, pointcol="white", showtitle=T, 
+           titlelab="ADMIXTURE analysis on O. tauri, SNPs thinned to 1 per kb", 
+           splab=c("K=2","K=3","K=4"), outputfilename="ADMIXTURE_Otauri",
+           imgtype="pdf",height=3,width=25)
+
+plot(p$plot[[1]])
+
+```
+
+For calculating Pi diversity, again VCFtools was used; the code called was
+
+```
+vcftools --vcf OTAU_2018_read2snps_DP10GP95_biallelic_MAF0.1_Miss0.8.vcf.recode.vcf --site-pi --keep IT.inds --recode
+
+```
+The code was repeated for NC and WA populations by changing --keep options. The .sites.pi for each 
+population was downloaded and processed in R using following scripts.
+
+```
+setwd("~/Genomics/Beetles/Population Genomics/Nucleotide_Diversity")
+
+
+datWA<- read.table("WA_pi.sites.pi", header = TRUE)
+datNC <- read.table("NC_pi.sites.pi", header = TRUE)
+datIT <- read.table("IT_pi.sites.pi", header = TRUE)
+
+head(datWA)
+# CHROM  POS       PI
+# 1 OTAU000062-RA  185 0.478723
+# 2 OTAU000062-RA  365 0.403369
+# 3 OTAU000062-RA  545 0.421986
+# 4 OTAU000062-RA  733 0.421986
+# 5 OTAU000062-RA  748 0.156028
+# 6 OTAU000062-RA 1296 0.000000
+
+WAMeanPi = aggregate(datWA$PI, by=list(datWA$CHROM), FUN=mean)
+NCMeanPi = aggregate(datNC$PI, by=list(datNC$CHROM), FUN=mean)
+ITMeanPi = aggregate(datIT$PI, by=list(datIT$CHROM), FUN=mean)
+
+head(WAMeanPi)
+# Group.1         x
+# 1 OTAU000002-RA 0.2138425
+# 2 OTAU000003-RA 0.1391844
+# 3 OTAU000008-RA 0.2403882
+# 4 OTAU000010-RA 0.1481764
+# 5 OTAU000011-RA 0.4388300
+# 6 OTAU000015-RA 0.2316438
+
+plot(density(WAMeanPi$x), main = "Mean Pi-Diversity of Beetle Populations", col="red", xlab = "Mean Pi Diversity", lwd = 3, xlim = c(0,0.5), ylim=c(0,6))
+lines(density(NCMeanPi$x), lwd = 3, col="blue")
+lines(density(ITMeanPi$x), lwd = 3, col="green")
+legend("right", legend=c("WA", "NC", "IT"), col = c("red", "blue", "green"), lty = 1:2, cex = 1, text.col = "black")
+
+
+summary(NCMeanPi)
+# Group.1           x         
+# OTAU000002-RA:   1   Min.   :0.0000  
+# OTAU000003-RA:   1   1st Qu.:0.1405  
+# OTAU000008-RA:   1   Median :0.1995  
+# OTAU000010-RA:   1   Mean   :0.1989  
+# OTAU000011-RA:   1   3rd Qu.:0.2535  
+# OTAU000013-RA:   1   Max.   :0.5106  
+# (Other)      :4948  
+
+sd(NCMeanPi$x)
+# [1] 0.09802099
+
+summary(WAMeanPi)
+summary(ITMeanPi)
+sd(WAMeanPi$x)
+sd(ITMeanPi$x)
+hist(WAMeanPi$x)
+hist(NCMeanPi$x)
+hist(ITMeanPi$x)
+
+#for looking at the contig
+
+WAMeanPi[which(WAMeanPi$x == 0),]
+dim(WAMeanPi[which(WAMeanPi$x == 0),])
+dim(WAMeanPi[which(WAMeanPi$x >0.5),])
+
+NCMeanPi[which(NCMeanPi$x == 0),]
+dim(NCMeanPi[which(NCMeanPi$x == 0),])
+
+ITMeanPi[which(ITMeanPi$x == 0),]
+dim(ITMeanPi[which(ITMeanPi$x == 0),])
+
+```
+
+
+
+
 ------
 <div id='id-section18'/>
-### Page 18:
+### Page 18: Pop Genomics Day - 7: Analysis of Bayesian data
+
+All of us had taken different values of prior odds and run time is longer for higher prior odds.
+
+Bayesian Inference: 
+Prob (H|D) = Prob(H)*Prob(D|H)/ Sum [Prob(H)*Prob(D|H)]
+
+Probl(H|D) = Posterior probability
+Prob(D|H) = likelihood, estimated from data 
+Prob(H) is the prior probability, chosen from your prior belief. It can be a uninformative prior too. 
+
+Prior of 1kb is that the probability of loci under selection is 0.001. 
+The two hypothesis we are looking at are:
+H1= locus is under selection
+H2= locus is not under selection 
+
+Estimate likelihood using MCMC model: 
+MCMC tries to estimate the likelihood approximately based on sampling. 
+
 ------
 <div id='id-section19'/>
 ### Page 19:
