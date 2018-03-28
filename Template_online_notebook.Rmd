@@ -1787,15 +1787,18 @@ Then we made it executable by giving chmod u+x command.
 (Somehow it did not work) We will get back to it after spring break :) 
 
 Happy Holidays Fellas !!
+
 ------
 <div id='id-section14'/>
 ### Page 14: Spring Break
+
 During the spring break, I decided to practice analyzing data sets. Since, we did not see lot of 
 differences between WA and NC population of dung beetles, I thought maybe we could compare RNAseq data
 of our beetles with Colorado Potato beetles. So I went to the i5K website checked if 
 RNAseq data of colorado potato beetles were present. They were :) I connected to UVM's server and logged into PuTTY. 
 I copied the link and and entered the following code in the PuTTY after creating a directory called 
 Colorado_Beetles in my home directory. 
+
 ```
 wget https://i5k.nal.usda.gov/sites/default/files/data/Arthropoda/lepdec-%28Leptinotarsa_decemlineata%29/Current%20Genome%20Assembly/4.Transcriptomes%20and%20RNA-Seq/2nd%20instar%20whole%20tissue%20samples%20from%2012%20individuals%20from%20a%20lab%20colony/accepted_hits.bam
 
@@ -1817,6 +1820,7 @@ I checked the basic info of the file from where it was downloaded.
 - Sequencing platform: Illumina Hi-seq 2000
 - Analysis provider: Aligned by Dr. Schoville and Justin Clements
 - Alignment method: Tophatv2.0.9 alignment
+
 ```
 So this RNA seq data has been aligned by Tophat v2.0.9 alignment. Maybe we should align our reads (dung beetles) with the 
 same alignment tool so that we can compare them. 
@@ -1830,6 +1834,7 @@ This website contains information on usage and different options in Tophat
 https://ccb.jhu.edu/software/tophat/manual.shtml
 ```
 First, I converted the .bam file into .sam file using samtools view command. 
+
 
 ------
 <div id='id-section15'/>
@@ -1938,6 +1943,7 @@ log7.out:CV error (K=7): 0.58280
 log8.out:CV error (K=8): 0.62599
 log9.out:CV error (K=9): 0.66978
 ```
+
 We see the error margins. The lowest is seen in 2. 
 We are going to use value of K from 2-4
 We then download .Q files for the value of K from 2 to 4 using WinSCP 
