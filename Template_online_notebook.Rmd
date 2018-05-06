@@ -43,9 +43,9 @@ Science should be reproducible and one of the best ways to achieve this is by lo
 * [Page 15:](#id-section15).
 * [Page 16:](#id-section16).
 * [Page 17: Assignment 2](#id-section17). Population Genomic Diversity and Structure
-* [Page 18:](#id-section18).
-* [Page 19:](#id-section19).
-* [Page 20:](#id-section20).
+* [Page 18: 2018-03-26](#id-section18). Analsysis of Bayescan data
+* [Page 19: 2018-03-28](#id-section19). Bayescan
+* [Page 20: 2018-05-06](#id-section20). Project Work - Bayenv2 and XTX Estimation 
 * [Page 21:](#id-section21).
 * [Page 22:](#id-section22).
 * [Page 23:](#id-section23).
@@ -2160,10 +2160,265 @@ MCMC tries to estimate the likelihood approximately based on sampling.
 
 ------
 <div id='id-section19'/>
-### Page 19:
+### Page 19: 28th March, 2017: Bayescan analysis
+
+Thinning in Bayescan, thin of 10 mean you would record the likelihood in every 10 cycle of MCMC.
+If you are sampling every step, you will have lot of auto-correlation. 
+
 ------
 <div id='id-section20'/>
-### Page 20:
+### Page 20: Project Work - Bayenv2 and XTX Estimation
+
+Bayenv2 Analysis
+Bayenv2 analysis consists of two parts. In the first part, we need to create a covariance matrix; and in the second part, the program calculates XtX values for each SNPs.
+
+1) Covariance matrix preparation:
+
+a) Preparation of SNPs file:
+To prepare a covariance matrix we need a SNPsfile which contains allele counts across populations of each SNP. For each SNP, the counts will be represented 
+by two lines. First line contains counts of reference allele and second line contains counts of alternate allele. 
+
+
+We used vcftools to keep only biallelic sites with max missing of 0.8. This gave us 133291 sites. 
+We then parsed out counts for each population by using keep and counts function in vcftools. This gave us 
+three (WA/IT/NC).frq.count files. 
+
+We then used following bash script to arrange reference and alternate allele counts of each population for each SNP into 
+a single file. 
+
+```
+#!/bin/bash
+
+cd /data/project_data/beetles/share/LucySuraj/bayenv
+
+mkdir cut2
+mkdir cut2/ALT
+mkdir cut2/REF
+
+sed -i -e "1d" *.count
+
+for f in *.count
+do
+  cut -f5 $f > cut2/REF/$f.REF.cut
+  cut -f6 $f > cut2/ALT/$f.ALT.cut
+done
+
+
+paste cut2/REF/*.cut >cut2/REF/REF_ALL.cut
+paste cut2/ALT/*.cut > cut2/ALT/ALT_ALL.cut
+
+cd /data/project_data/beetles/share/LucySuraj/bayenv
+ls *.count > popnames
+sed -i -- 's/.count//g' popnames
+tr "\n" "\t" < popnames > popnames2
+
+cat popnames2 cut2/REF/REF_ALL.cut > cut2/REF/REF_ALL2.cut
+cat popnames2 cut2/ALT/ALT_ALL.cut > cut2/ALT/ALT_ALL2.cut
+
+```
+This script commands to make reference and alternate directories. After that, it asks to take fifth column (which contains reference allele counts) and sixth column (which contains alternate allele counts) from each 
+population count file and save into the respective directories. Next, it joins the reference allele counts for different population into a single file and alternate allele counts into a separate file. Finally, it 
+catenates popnames file to both the files which contains names of each population (IT,WA and NC). 
+
+At the end, we have two files. One of them contains reference allele counts for each population for every SNPs. Another one contains alternate allele counts for the same. 
+
+We then made number vectors ranging from 1-133291 (odd and even in a separate text file in R) and saved them as num_ref.txt (odd) and num_alt.txt (even) 
+
+We also created locus i.d for each SNP from the filtered vcf file (out.recode.vcf) by attaching CHROM and POS column; saved as a file out.kept.sites 
+
+Next, we attached the locus i.d. to both REF_ALL2.cut and ALT_ALL2.cut files and pasted respective number vectors as well. The files were then saved as REF_ALL3.cut and ALT_ALL3.cut
+
+Finally the two files were catenated together and saved as REFALT.counts
+
+REFALT.counts file contained I.D locus column for each SNP, vector number column (odd numbers in the first half, and even numbers in the second half and allele counts for each populations in separate columns. 
+
+We then opened the REFALT.counts file in R and rearranged vector number so they are continuous; and saved as REFALT_FINAL.counts
+
+At last, we deleted locus I.D. column and vector numbers and saved the file as Bayenv_input.txt 
+This file contained reference and alternate allele counts for each SNP for each populations. 
+
+Bayenv_input.txt file was then used as an input file to create co-variance matrix. This is also our SNPs file which is required for XtX estimation. 
+
+b) Preparation of omega matrix 
+
+```
+./ Bayenv2 0 -i Bayenv_input -p 3 -k 100000 -r 88734 > LucySuraj_matrix.out 
+
+```
+Here, ./ Bayenv2 calls for program Bayenv2 saved in our server. 0 asks for creating a co-variance matrix (it becomes 1 while estimating Bayes factor). -p represents number of populations which is 3 in our case.
+-k is the number of iterations. -r is the random seed number required for MCMC algorithm to start. > output is saved as file named LucySuraj_matrix.out 
+
+The co-variance matrix generated was 3*3 matrix. we opened the matrix in vim and navigated towards the end of the file where values seemed more consistent. The last matrix was chosen and saved as a file 
+omega.out. This is termed as an omega matrix which will be used as a matrix file for estimating XtX. 
+
+c) Preparation of environfile:
+
+bayenv2 requires an environfile for calculating XtX although the values of environmental variables do not affect calculation of XtX. Hence an environfile containing single variable was created with some dummy values 
+and saved as environfile.txt 
+
+d) Calculation of XtX:
+
+Finally, to calculate XtX, a bash script called calc_bayevn.sh was used
+
+```
+#!/bin/bash
+
+#Usage: ./calc_bayenv.sh <Name of your SNPSFILE> <Name of your ENVFILE> <Name of your MATFILE> <Nuber of populations> <Number of MCMC iterations> <Number of environmental factors>
+
+SNPFILE=$1
+ENVFILE=$2
+MATFILE=$3
+POPNUM=$4
+ITNUM=$5
+ENVNUM=$6
+
+
+split -a 10 -l 2 $SNPFILE snp_batch
+
+#for f in $(ls snp_batch*)
+for f in snp_batch*
+
+do
+bayenv2 -i $f -e $ENVFILE -m $MATFILE -k $ITNUM -r $RANDOM -p $POPNUM -n $ENVNUM -t -X
+done
+
+rm -f snp_batch*
+
+```
+This script splits each SNP present in SNPs file into a separate file and save and snp_batch*, then calculate XtX for each of those files. The flag -X means to calculate XtX. 
+It also calculates bayes factor for each environmental variable. Since, we had dummy values in our environfile, the bayes factor values becomes nonsequitur for our analysis.
+However, the XtX values for each SNP file was saved as XTX_out.environfile.txt. 
+
+ 
+XtX values in the above file were against each snp_batch* files created in the bayenv2 run. We did the following command to paste chrompos sites in the XtX_out.environfile.txt 
+
+```
+paste out.kept.sites XtX_out.environfile.txt > XtX_snps.txt
+```
+
+XtX_out.environfile.txt was downloaded to the local computer and opened in R. 
+
+```
+setwd("~/Genomics/Beetles/Population Genomics/Bayenv Analysis")
+
+XtX <- read.table("XtX_out.environfile.txt", header = F)
+head (XtX)
+# V1     V2
+# 1 snp_batchaaaaaaaaaa 3.2796
+# 2 snp_batchaaaaaaaaab 2.7925
+# 3 snp_batchaaaaaaaaac 3.0899
+# 4 snp_batchaaaaaaaaad 3.0032
+# 5 snp_batchaaaaaaaaae 2.8844
+# 6 snp_batchaaaaaaaaaf 3.2648
+
+plot(density(XtX$V2))
+quantile(XtX$V2, 0.999)
+# 99.9% 
+# 27.20563 
+
+cands <- XtX[which(XtX$V2>quantile(XtX$V2,0.999)),]
+dim(cands)
+
+# 134   2
+# There are 134 SNPs which lie at the 0.1%. During Bayscan analysis, there were only 16 SNPs with a FDR of 0.1%. 
+
+write.table(cands, "candsnps_Xtx.txt", row.names = F, col.names = T, sep = "\t", quote = F) #XtX outliers were saved as candsnps_Xtx.txt 
+```
+
+candsnps_Xtx.txt containing 134 outlier SNPs were uploaded to the server. The SNP loci were then identified as chrompos i.d by following code
+
+```
+grep -f candsnps_Xtx.txt XtX_snps.txt > cands_Xtx_loci.txt
+
+```
+
+First two column of cands_Xtx_loci.txt containing chromosome and position i.d. were then saved in a new file as cands_Xtx_134.txt
+
+``
+cut -f1,2 cands_Xtx_loci.txt > cands_Xtx_134.txt
+```
+
+To annotate XtX outliers, we used annotated vcf file snpeffcontigs.biallelic.vcf.recode.vcf produced by SnpEff.
+First we added CHROM and POS heading in our cands_Xtx_134.txt file and saved it as Xtxchrompos.txt
+
+We then called vcftools to get the annotations for our Xtx outliers. 
+
+```
+vcftools --vcf snpeffcontigs.biallelic.vcf.recode.vcf --positions Xtxchrompos.txt --recode --recode-INFO-all
+```
+The --recode-INFO-all flag keeps all the information present in INFO column made by SnpEff containing annotations
+The Xtx annotated vcf file contains header section containing # and also other columns that were not relevant to us. We thus grepped out only 1st, 2nd and 8th column and saved it as annotated_Xtxoutliers.txt
+
+```
+grep -v "#" out.recode.vcf | cut -f1,2,8 > annotated_Xtxoutliers.txt
+```
+
+The file annotated_Xtxoutliers.txt was then downloaded and opened in Microsoft Excel. There 8th column containing annotation was very descriptive and pipe (|) separated. We trimmed the column in Excel and kept only 
+columns containing two kinds of information (what sort of variation and impact of variation) 
+
+The file was then saved as annotated_Xtxoutliers_trimmed.txt 
+
+Similarly, FST outliers from Bayescan analysis annotated and saved as annotated_FSToutliers.txt 
+
+To examine whether there was an overlap between the FST and XTX outlier loci, we created a venndiagram in R by using the following script. 
+
+```
+setwd("~/Genomics/Beetles/Population Genomics/Bayenv Analysis")
+
+library(VennDiagram)
+
+## making venndiagram from more 134 xtx outliers and 16 Fst outliers
+
+Fst1 <- read.csv("FSToutliers.csv", header = F)
+head(Fst1)
+
+VFst1 <- as.vector(Fst1$V1)
+head(VFst1)
+
+Xtx2 <- read.csv("XtXoutliers_134.csv", header = F)
+head(Xtx2)
+
+VXtx2 <- as.vector(Xtx2$V1)
+head(VXtx2)
+
+venn.diagram(x = list(VFst1,VXtx2), category.names = c("FST Outliers", "XtX Outliers"), filename = "all_outliers134.png", main = "Overlap of total Bayscan and Bayenv Outliers", fill = c("green", "purple"), ext.text = F)
+
+```
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+ 
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ------
 <div id='id-section21'/>
 ### Page 21:
