@@ -2334,7 +2334,7 @@ grep -f candsnps_Xtx.txt XtX_snps.txt > cands_Xtx_loci.txt
 
 First two column of cands_Xtx_loci.txt containing chromosome and position i.d. were then saved in a new file as cands_Xtx_134.txt
 
-``
+```
 cut -f1,2 cands_Xtx_loci.txt > cands_Xtx_134.txt
 ```
 
