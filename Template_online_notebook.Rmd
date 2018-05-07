@@ -2385,6 +2385,45 @@ venn.diagram(x = list(VFst1,VXtx2), category.names = c("FST Outliers", "XtX Outl
 
 ```
 
+Tajima's D = pi - theta (observed heterozygosity - expected heterozygosity)
+
+Tajima's D value becomes negative after a bottleneck/selective sweep because these events will reduce diversity of a population and increase frequency of rare variants.
+However, over time Tajima'D recovers when population starts to expand. 
+In our study, slightly negative value of Tajima D of Italy population aligns with the demographyic model which predicts a strong bottleneck in Italy in the past but the population has been growing now. 
+
+The positive value of Tajima D indicates more pairwise differences than segregating sites. This happens in the presence of balancing selection when alleles are kept at intermediate frequencies.
+ 
+
+Tajima's D was calculated for each population using VCFtools. The bin size of 1000000 was kept to ensure that each transcript is considered only once for the estimation.  
+
+Following code was used to calculate Tajima's D 
+
+```
+vcftools --vcf OTAU_2018_reads2snps_DP10GP95.vcf --max-alleles 2 --min-alleles 2 --max-missing 0.8 --keep NC.pop --TajimaD 1000000 --out NC
+
+```
+--keep and --out flags were changed for each population 
+
+The outputs were then opened in R and mean Tajima's D for each population was calculated by using following R script 
+
+```
+setwd("~/Genomics/Beetles/Population Genomics/Tajima D")
+
+WA <- read.table("WA_TD1000000.txt", header = T)
+head(WA)
+
+NC <- read.table("NC_TD1000000.txt", header = T)
+head(NC)
+
+IT <- read.table("IT_TD1000000.txt", header = T)
+head(IT)
+
+mean(WA$TajimaD, na.rm = T)
+mean(NC$TajimaD, na.rm = T)
+mean(IT$TajimaD, na.rm = T)
+
+```
+
 
 
 
